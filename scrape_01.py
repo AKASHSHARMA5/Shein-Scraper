@@ -1,16 +1,30 @@
-from DrissionPage import ChromiumPage
+from DrissionPage import ChromiumPage, ChromiumOptions
 from urllib.parse import urlparse
 import json
 import time
 import re
 
 def get_flawless_product_details():
-    page = ChromiumPage()
+    print("🚀 Configuring browser with Webshare proxy...")
+    
+    # ==========================================
+    # 🛑 YOUR WEBSHARE PROXY SETUP 🛑
+    # REPLACE THE STRING BELOW WITH YOUR ACTUAL WEBSHARE DETAILS!
+    # Format: 'username:password@ip:port'
+    # ==========================================
+    my_proxy = '31.59.20.176:6754'
+    
+    co = ChromiumOptions()
+    co.set_proxy(my_proxy)
+    co.no_imgs(True) # Blocks image downloads to save your 1GB of bandwidth!
+    
+    # Pass the options to the browser
+    page = ChromiumPage(co)
     
     try:
         print("🚀 Launching browser...")
         page.get("https://us.shein.com/category-c-12472.html")
-        time.sleep(5) # Wait for initial load
+        time.sleep(6) # Wait a little extra time for proxy routing
         
         # Scroll deliberately to force images to load
         print("⏬ Scrolling to trigger lazy-loading...")
@@ -34,7 +48,6 @@ def get_flawless_product_details():
             
             # 1. PERFECT NAME: Extract from the URL itself
             try:
-                # Breaks down: https://us.shein.com/Cute-Dress-Name-p-123.html -> Cute Dress Name
                 path = urlparse(url).path
                 raw_slug = path.split('-p-')[0].strip('/')
                 clean_name = raw_slug.replace('-', ' ').title()
