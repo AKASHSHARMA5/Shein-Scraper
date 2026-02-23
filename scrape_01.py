@@ -1,109 +1,135 @@
-from DrissionPage import ChromiumPage, ChromiumOptions
-from urllib.parse import urlparse
 import json
 import time
 import re
+import random
+from urllib.parse import urlparse
+from DrissionPage import ChromiumPage, ChromiumOptions
+
+# ==========================================
+# 🛑 CONFIGURATION 🛑
+# ==========================================
+MY_PROXY = '23.95.150.145:6114'
+BASE_URL = "https://us.shein.com/category-c-12472.html"
+PAGES_BEFORE_RESTART = 4  # Lower this to 2 or 3 if you still see Captchas
+
+def create_fresh_browser():
+    """Launch a brand new browser instance to reset Bot Score."""
+    print("\n♻️  Creating a fresh browser session to clear trackers...")
+    co = ChromiumOptions()
+    co.set_proxy(MY_PROXY)
+    
+    # Randomize User-Agent to look like a different person each time
+    ua_list = [
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Edge/122.0.0.0 Safari/537.36"
+    ]
+    co.set_user_agent(random.choice(ua_list))
+    return ChromiumPage(co)
 
 def get_flawless_product_details():
-    print("🚀 Configuring browser with Webshare proxy...")
-    
-    # ==========================================
-    # 🛑 YOUR WEBSHARE PROXY SETUP 🛑
-    # REPLACE THE STRING BELOW WITH YOUR ACTUAL WEBSHARE DETAILS!
-    # Format: 'username:password@ip:port'
-    # ==========================================
-    my_proxy = '31.59.20.176:6754'
-    
-    co = ChromiumOptions()
-    co.set_proxy(my_proxy)
-    co.no_imgs(True) # Blocks image downloads to save your 1GB of bandwidth!
-    
-    # Pass the options to the browser
-    page = ChromiumPage(co)
-    
-    try:
-        print("🚀 Launching browser...")
-        page.get("https://us.shein.com/category-c-12472.html")
-        time.sleep(6) # Wait a little extra time for proxy routing
-        
-        # Scroll deliberately to force images to load
-        print("⏬ Scrolling to trigger lazy-loading...")
-        for _ in range(3):
-            page.scroll.down(1500)
-            time.sleep(2)
-            
-        products_dict = {}
-        links = page.eles('xpath://a[contains(@href, "-p-")]')
-        
-        print(f"🔍 Analyzing {len(links)} product nodes...")
-        
-        for link in links:
-            href = link.attr('href')
-            if not href: continue
-            
-            url = href if href.startswith('http') else f"https://us.shein.com{href}"
-            
-            if url not in products_dict:
-                products_dict[url] = {"name": "", "price": "", "image": "", "url": url}
-            
-            # 1. PERFECT NAME: Extract from the URL itself
-            try:
-                path = urlparse(url).path
-                raw_slug = path.split('-p-')[0].strip('/')
-                clean_name = raw_slug.replace('-', ' ').title()
-                products_dict[url]["name"] = clean_name
-            except:
-                pass
+    all_extracted_products = []
+    current_page_num = 1 
+    page = create_fresh_browser()
 
-            # 2. PERFECT IMAGE: Bypass the gray placeholder
-            if not products_dict[url]["image"]:
+    try:
+        print("🚀 Launching Ironclad Scraper with Auto-Reset...")
+        
+        while True:
+            # --- STRATEGY 1: PROACTIVE SESSION RESET ---
+            # Every few pages, we kill the browser before a Captcha even has a chance to appear
+            if current_page_num > 1 and (current_page_num - 1) % PAGES_BEFORE_RESTART == 0:
+                print(f"🛠  Safety Reset: Reaching Page {current_page_num}. Refreshing identity...")
+                page.quit()
+                time.sleep(random.uniform(7, 12)) 
+                page = create_fresh_browser()
+
+            print(f"\n📄 --- SCRAPING PAGE {current_page_num} ---")
+            
+            # --- STRATEGY 2: DIRECT URL INJECTION ---
+            target_url = f"{BASE_URL}?page={current_page_num}"
+            print(f"🔗 Navigating directly to: {target_url}")
+            page.get(target_url)
+            
+            # Human-like loading wait
+            time.sleep(random.uniform(5.0, 8.0))
+
+            print("⏬ Scrolling to trigger lazy-loading...")
+            for _ in range(5): 
+                page.scroll.down(1000)
+                time.sleep(random.uniform(2.0, 3.5))
+                
+            links = page.eles('xpath://a[contains(@href, "-p-")]')
+            
+            # --- STRATEGY 3: REACTIVE CAPTCHA RESCUE ---
+            # If we find 0 products, we assume a Captcha/Block and restart immediately
+            if len(links) == 0:
+                print("⚠️ WARNING: Found 0 products! Likely a CAPTCHA wall.")
+                print("📸 Saving error log screenshot...")
+                page.get_screenshot(path=f"captcha_at_page_{current_page_num}.jpg")
+                
+                print("🔄 Executing Emergency Reset Rescue...")
+                page.quit()
+                cool_down = random.randint(30, 60)
+                print(f"⏳ Cooling down for {cool_down} seconds before retrying...")
+                time.sleep(cool_down)
+                
+                page = create_fresh_browser()
+                continue # Retries the SAME page number with a fresh identity
+
+            # --- EXTRACTION LOGIC ---
+            products_dict = {}
+            for link in links:
+                href = link.attr('href')
+                if not href: continue
+                url = href if href.startswith('http') else f"https://us.shein.com{href}"
+                
+                if url not in products_dict:
+                    products_dict[url] = {"name": "", "price": "", "image": "", "url": url}
+                
+                # Name Extraction
                 try:
-                    img_tag = link.ele('tag:img', timeout=0)
+                    path = urlparse(url).path
+                    raw_slug = path.split('-p-')[0].strip('/')
+                    products_dict[url]["name"] = raw_slug.replace('-', ' ').title()
+                except: pass
+
+                # Image Extraction
+                try:
+                    img_tag = link.ele('tag:img', timeout=0.5)
                     if img_tag:
-                        # Grab both potential image sources
                         src = img_tag.attr('src')
                         data_src = img_tag.attr('data-src')
-                        
-                        # Use data-src if the main src is the gray placeholder
-                        final_src = data_src if (src and 'bg-grey' in src) else (src or data_src)
-                        
-                        if final_src and 'http' in final_src and 'bg-grey' not in final_src:
-                            products_dict[url]["image"] = final_src
-                except:
-                    pass
+                        products_dict[url]["image"] = data_src if (src and 'bg-grey' in src) else (src or data_src)
+                except: pass
 
-            # 3. PERFECT PRICE: Use Regex to find the exact dollar amount
-            if not products_dict[url]["price"]:
+                # Price Extraction
                 try:
                     parent = link.parent(2) 
-                    text_content = parent.text
-                    # Find all matches that look like $XX.XX
-                    prices = re.findall(r'\$\d+\.\d{2}', text_content)
-                    if prices:
-                        # Grab the first valid price found in that block
-                        products_dict[url]["price"] = prices[0]
-                except:
-                    pass
+                    prices = re.findall(r'\$\d+\.\d{2}', parent.text)
+                    if prices: products_dict[url]["price"] = prices[0]
+                except: pass
 
-        # Validate and filter
-        final_products = []
-        for url, data in products_dict.items():
-            # Only keep the product if it successfully grabbed all 3 pieces of data
-            if data["name"] and data["price"] and data["image"]:
-                final_products.append(data)
+            page_valid_count = 0
+            for url, data in products_dict.items():
+                if data["name"] and data["price"]:
+                    all_extracted_products.append(data)
+                    page_valid_count += 1
             
-            if len(final_products) >= 40:
-                break
-
-        with open("shein_flawless.json", "w", encoding="utf-8") as f:
-            json.dump(final_products, f, indent=4)
+            print(f"✅ Successfully grabbed {page_valid_count} products.")
             
-        print(f"✅ SUCCESS! Saved {len(final_products)} perfect products.")
-        print("📁 Open 'shein_flawless.json' to check the results!")
+            # Move to next page
+            current_page_num += 1
+            time.sleep(random.uniform(4, 7))
 
     except Exception as e:
-        print(f"❌ Error: {e}")
+        print(f"❌ Critical Error: {e}")
     finally:
+        # Final Save
+        print("\n💾 Saving all collected data to 'shein_flawless.json'...")
+        with open("shein_flawless.json", "w", encoding="utf-8") as f:
+            json.dump(all_extracted_products, f, indent=4)
+        print(f"🎉 Process Finished. Total items: {len(all_extracted_products)}")
         page.quit()
 
 if __name__ == "__main__":

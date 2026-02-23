@@ -3,78 +3,97 @@ import time
 import random
 from DrissionPage import ChromiumPage, ChromiumOptions
 
+# ==========================================
+# 🛑 CONFIGURATION 🛑
+# ==========================================
+MY_PROXY = '23.95.150.145:6114' 
+RESET_EVERY_X_ITEMS = 15  # Wipe session every 15 products to stay under the radar
+SAVE_PROGRESS_EVERY = 50   # Emergency save every 50 items
+
+def create_fresh_browser():
+    """Launch a clean browser instance with rotated identity."""
+    print("\n♻️  Resetting session and clearing cookies...")
+    co = ChromiumOptions()
+    co.set_proxy(MY_PROXY)
+    co.no_imgs(True)  # CRITICAL: Saves massive bandwidth for 5,000 pages
+    
+    user_agents = [
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+    ]
+    co.set_user_agent(random.choice(user_agents))
+    return ChromiumPage(co)
+
 def scrape_deep_details():
-    # 1. Load the data you already saved
+    # 1. Load the 5,000 products from Script 1
     try:
         with open('shein_flawless.json', 'r', encoding='utf-8') as f:
             products = json.load(f)
     except FileNotFoundError:
-        print("❌ Could not find 'shein_flawless.json'. Make sure it's in the same folder.")
+        print("❌ Error: 'shein_flawless.json' not found.")
         return
 
-    print(f"📦 Loaded {len(products)} products. Starting deep scrape for the first 3...")
+    total_count = len(products)
+    print(f"📦 Loaded {total_count} products. Starting deep scrape...")
     
-    # ==========================================
-    # 🛑 YOUR WEBSHARE PROXY SETUP 🛑
-    # Put the EXACT SAME IP:PORT here that you used in Script 1!
-    # Example format: '185.199.229.156:8080'
-    # ==========================================
-    my_proxy = '31.59.20.176:6754'
+    page = create_fresh_browser()
     
-    # --- LEVEL 1 PROTECTION: USER-AGENT ROTATION ---
-    user_agents = [
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Edge/122.0.0.0 Safari/537.36"
-    ]
-    
-    # Configure the browser with Proxy, Image Blocking, and User Agent
-    co = ChromiumOptions()
-    co.set_proxy(my_proxy)
-    co.no_imgs(True) # CRITICAL: Saves your 1GB free bandwidth!
-    co.set_user_agent(random.choice(user_agents))
-    
-    page = ChromiumPage(co)
-    
-    # 2. Loop through the URLs (Limiting to 3 for safe testing)
-    for index, product in enumerate(products[:3]):
-        url = product['url']
-        print(f"\n[{index + 1}/3] Visiting via Proxy: {product['name']}")
-        
-        page.get(url)
-        
-        # --- LEVEL 1 PROTECTION: RANDOMIZED DELAYS ---
-        sleep_time = random.uniform(4.5, 8.2)
-        print(f"   ⏳ Waiting {sleep_time:.2f} seconds to mimic human reading...")
-        time.sleep(sleep_time) 
-        
-        # --- LEVEL 1 PROTECTION: HUMAN SCROLLING ---
-        page.scroll.down(random.randint(300, 700))
-        time.sleep(random.uniform(1.0, 2.5)) 
-        
-        # 3. Extract the deep details
-        try:
-            details_div = page.ele('xpath://div[contains(@class, "product-intro")]', timeout=3)
+    try:
+        # 2. Process ALL products
+        for index, product in enumerate(products):
             
-            if details_div:
-                raw_text = details_div.text
-                clean_text = "\n".join([line for line in raw_text.split('\n') if line.strip()])
-                product['deep_details'] = clean_text
-                print("   ✅ Successfully extracted details.")
-            else:
-                product['deep_details'] = "Details block not found."
-                print("   ⚠️ Could not find the details block on this page.")
-                
-        except Exception as e:
-            product['deep_details'] = f"Error: {e}"
-            print("   ❌ Error extracting details.")
+            # --- STRATEGY: PROACTIVE SESSION RESET ---
+            if index > 0 and index % RESET_EVERY_X_ITEMS == 0:
+                print(f"🛠  Reached {index} items. Rebooting browser to lower Bot Score...")
+                page.quit()
+                time.sleep(random.uniform(5, 10))
+                page = create_fresh_browser()
 
-    # 4. Save the enriched data to a new file
-    with open("shein_enriched_data.json", "w", encoding="utf-8") as f:
-        json.dump(products[:3], f, indent=4)
-        
-    print("\n🎉 Done! Check 'shein_enriched_data.json' for the deep details.")
-    page.quit()
+            print(f"[{index + 1}/{total_count}] Visiting: {product['name']}")
+            
+            try:
+                page.get(product['url'])
+                
+                # --- STRATEGY: RANDOM HUMAN DELAYS ---
+                time.sleep(random.uniform(4.0, 7.0))
+                
+                # Check for Captcha/Block (If product intro is missing)
+                details_div = page.ele('xpath://div[contains(@class, "product-intro")]', timeout=3)
+                
+                if not details_div:
+                    print("⚠️  Empty page or Captcha! Attempting Hard Refresh...")
+                    page.refresh()
+                    time.sleep(8)
+                    details_div = page.ele('xpath://div[contains(@class, "product-intro")]')
+
+                if details_div:
+                    raw_text = details_div.text
+                    # Clean up the text
+                    clean_text = "\n".join([line for line in raw_text.split('\n') if line.strip()])
+                    product['deep_details'] = clean_text
+                    print("   ✅ Details saved.")
+                else:
+                    product['deep_details'] = "Blocked or Not Found"
+                    print("   ❌ Failed to load details.")
+
+            except Exception as e:
+                print(f"   ❌ Error: {e}")
+                product['deep_details'] = "Error during scrape"
+
+            # --- STRATEGY: PERIODIC AUTO-SAVE ---
+            if (index + 1) % SAVE_PROGRESS_EVERY == 0:
+                with open("shein_deep_progress.json", "w", encoding="utf-8") as f:
+                    json.dump(products[:index+1], f, indent=4)
+                print(f"💾 Progress checkpoint: {index + 1} items saved.")
+
+    finally:
+        # 3. Final Save
+        print("\n💾 Saving final data...")
+        with open("shein_final_enriched.json", "w", encoding="utf-8") as f:
+            json.dump(products, f, indent=4)
+        print(f"🎉 MISSION COMPLETE! Check 'shein_final_enriched.json'.")
+        page.quit()
 
 if __name__ == "__main__":
     scrape_deep_details()
