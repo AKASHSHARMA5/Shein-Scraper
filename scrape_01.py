@@ -1,29 +1,27 @@
 from DrissionPage import ChromiumPage
+from urllib.parse import urlparse
 import json
 import time
+import re
 
-def get_full_product_details():
+def get_flawless_product_details():
     page = ChromiumPage()
     
     try:
-        print("🚀 Launching browser and navigating to SHEIN...")
+        print("🚀 Launching browser...")
         page.get("https://us.shein.com/category-c-12472.html")
+        time.sleep(5) # Wait for initial load
         
-        # Wait for the page to initialize
-        time.sleep(4)
-        
-        # Scroll down to force the images and prices to load (Lazy Loading)
-        print("⏬ Scrolling to load images and prices...")
-        page.scroll.down(3000)
-        time.sleep(3)
-        
-        # We use a dictionary to group data by URL so we don't get duplicates
+        # Scroll deliberately to force images to load
+        print("⏬ Scrolling to trigger lazy-loading...")
+        for _ in range(3):
+            page.scroll.down(1500)
+            time.sleep(2)
+            
         products_dict = {}
-        
-        print("📸 Scanning page for Images, Prices, and Names...")
-        
-        # Find all product links
         links = page.eles('xpath://a[contains(@href, "-p-")]')
+        
+        print(f"🔍 Analyzing {len(links)} product nodes...")
         
         for link in links:
             href = link.attr('href')
@@ -31,68 +29,64 @@ def get_full_product_details():
             
             url = href if href.startswith('http') else f"https://us.shein.com{href}"
             
-            # Create a blank slate for the product if it's new
             if url not in products_dict:
                 products_dict[url] = {"name": "", "price": "", "image": "", "url": url}
             
-            # 1. --- EXTRACT CLEAN NAME ---
-            # The 'title' attribute usually holds the perfectly clean name
-            title_attr = link.attr('title')
-            if title_attr and len(title_attr) > 5:
-                products_dict[url]["name"] = title_attr
-            elif not products_dict[url]["name"] and link.text:
-                # Fallback: Clean the text by removing discounts and "Save $" lines
-                lines = link.text.split('\n')
-                for line in lines:
-                    line = line.strip()
-                    if len(line) > len(products_dict[url]["name"]) and "$" not in line and "%" not in line and line.lower() != 'local':
-                        products_dict[url]["name"] = line
+            # 1. PERFECT NAME: Extract from the URL itself
+            try:
+                # Breaks down: https://us.shein.com/Cute-Dress-Name-p-123.html -> Cute Dress Name
+                path = urlparse(url).path
+                raw_slug = path.split('-p-')[0].strip('/')
+                clean_name = raw_slug.replace('-', ' ').title()
+                products_dict[url]["name"] = clean_name
+            except:
+                pass
 
-            # 2. --- EXTRACT IMAGE ---
+            # 2. PERFECT IMAGE: Bypass the gray placeholder
             if not products_dict[url]["image"]:
-                # Look for an image tag inside this link
-                img_tag = link.ele('tag:img', timeout=0)
-                if img_tag:
-                    # Sometimes websites use data-src for lazy loading
-                    src = img_tag.attr('src')
-                    if src and 'data:image' in src: 
-                        src = img_tag.attr('data-src') or src
-                        
-                    if src and 'http' in src:
-                        products_dict[url]["image"] = src
-
-            # 3. --- EXTRACT PRICE ---
-            if not products_dict[url]["price"]:
                 try:
-                    # Go UP the HTML tree to the product container, then search for the $ sign
-                    parent = link.parent(2) 
-                    price_ele = parent.ele('text:$', timeout=0)
-                    if price_ele:
-                        # Grab just the line with the current price (ignoring crossed-out old prices)
-                        raw_lines = price_ele.text.split('\n')
-                        for line in raw_lines:
-                            if '$' in line:
-                                products_dict[url]["price"] = line.strip()
-                                break
+                    img_tag = link.ele('tag:img', timeout=0)
+                    if img_tag:
+                        # Grab both potential image sources
+                        src = img_tag.attr('src')
+                        data_src = img_tag.attr('data-src')
+                        
+                        # Use data-src if the main src is the gray placeholder
+                        final_src = data_src if (src and 'bg-grey' in src) else (src or data_src)
+                        
+                        if final_src and 'http' in final_src and 'bg-grey' not in final_src:
+                            products_dict[url]["image"] = final_src
                 except:
                     pass
 
-        # Filter out any items that didn't get a full set of data
+            # 3. PERFECT PRICE: Use Regex to find the exact dollar amount
+            if not products_dict[url]["price"]:
+                try:
+                    parent = link.parent(2) 
+                    text_content = parent.text
+                    # Find all matches that look like $XX.XX
+                    prices = re.findall(r'\$\d+\.\d{2}', text_content)
+                    if prices:
+                        # Grab the first valid price found in that block
+                        products_dict[url]["price"] = prices[0]
+                except:
+                    pass
+
+        # Validate and filter
         final_products = []
         for url, data in products_dict.items():
+            # Only keep the product if it successfully grabbed all 3 pieces of data
             if data["name"] and data["price"] and data["image"]:
                 final_products.append(data)
             
-            # Stop when we have 40 perfect products
             if len(final_products) >= 40:
                 break
 
-        # Save to file
-        with open("shein_full_details.json", "w", encoding="utf-8") as f:
+        with open("shein_flawless.json", "w", encoding="utf-8") as f:
             json.dump(final_products, f, indent=4)
             
-        print(f"✅ SUCCESS! Extracted {len(final_products)} complete products.")
-        print("📁 Open 'shein_full_details.json' to see your clean data!")
+        print(f"✅ SUCCESS! Saved {len(final_products)} perfect products.")
+        print("📁 Open 'shein_flawless.json' to check the results!")
 
     except Exception as e:
         print(f"❌ Error: {e}")
@@ -100,4 +94,4 @@ def get_full_product_details():
         page.quit()
 
 if __name__ == "__main__":
-    get_full_product_details()
+    get_flawless_product_details()
