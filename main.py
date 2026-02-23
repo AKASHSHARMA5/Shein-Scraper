@@ -23,8 +23,8 @@ run_input = {
     "mode": "products",
     "countryCode": "US",
     "categoryId": "12472",  # sub-cateory id e.g Women's Dresses 
-    "page": 1,              # Start at page 1
-    "perPage": 100          # Get the maximum 100 products per page
+    "page": 100,              # Start at page 1
+    "perPage": 10000          # Get the maximum 100 products per page
 }
 
 print(f"Starting Apify Shein Scraper for Category {run_input['categoryId']}...")
