@@ -1,66 +1,171 @@
-# SHEIN Category Scraper: Women's Dresses
+# 👗 SHEIN Ironclad Scraper – Women's Dresses (Category ID: 12472)
 
-This project is a Python-based web scraping solution designed to extract structured product data from SHEIN's specific product categories (e.g., Women's Dresses, Category ID: 12472). 
+A high-performance, two-stage Python scraping system engineered to extract products from SHEIN’s Women's Dresses category.
 
-It safely extracts comprehensive product details—including real-time pricing, stock availability, and high-resolution image URLs—and exports the data into a clean, analytical JSON format.
+Built with a custom **“Ironclad” anti-block architecture**, this scraper is designed to handle aggressive bot detection systems using intelligent session resets, browser fingerprint control, and bandwidth optimization.
 
-## Design Choices: Why Apify instead of Selenium?
+---
 
-For this task, I architected the solution to use the Apify platform and its Python Client rather than building a custom Selenium or Playwright script from scratch. This decision was made for several critical engineering and reliability reasons:
+## 🏗 System Architecture – Two-Stage Pipeline
 
-1. Advanced Anti-Bot Evasion (WAF Bypass): SHEIN employs aggressive Web Application Firewalls (WAF) and bot-mitigation systems (like Cloudflare and DataDome). Standard Selenium instances have easily identifiable browser fingerprints that immediately trigger CAPTCHAs or `503 Service Unavailable` blocks. Apify seamlessly handles browser fingerprint spoofing to mimic genuine user traffic.
+To maximize speed, stability, and scalability, the scraper is divided into two specialized scripts:
 
-2. Built-in Proxy Rotation: Scraping thousands of products requires rotating residential proxies. Instead of purchasing, configuring, and managing a complex proxy pool locally with Selenium, Apify handles proxy rotation natively to prevent IP bans.
+### 🔹 Stage 1: Category Harvester (`script1_harvester.py`)
+- Crawls category listing pages
+- Collects:
+  - Product URLs  
+  - Product names  
+  - Base prices  
+- Generates initial dataset file:  
+  `shein_flawless.json`
 
-3. Speed and Scalability: Selenium is heavy and computationally expensive to run locally, especially when loading images and executing JavaScript. By utilizing an Apify cloud actor, the heavy lifting is offloaded, allowing for much faster, asynchronous data extraction.
+---
 
-4. Maintainability: E-commerce sites frequently change their DOM structures. Relying on an API-driven scraping structure reduces the maintenance debt of constantly updating XPath or CSS selectors when SHEIN updates its UI.
+### 🔹 Stage 2: Deep Detail Scraper (`script2_deep_details.py`)
+- Visits each product URL collected in Stage 1
+- Extracts:
+  - Full descriptions  
+  - Materials & composition  
+  - Intro text  
+  - High-resolution image URLs  
+- Includes auto-save checkpoint system:
+  `shein_deep_progress.json`
 
-## Prerequisites
+---
 
-• Python 3.6+  
-• An Apify account (the free tier provides sufficient compute credits for this extraction).
+## 🛠 Engineering Decision – Why DrissionPage?
 
-## Installation & Setup
+This version was rebuilt using **DrissionPage** instead of Selenium or Apify for better stealth and performance.
 
-1. Clone or download this repository.  
-2. Open your terminal and install the required Apify Python client:
+### ✅ Hybrid Control
+Combines:
+- Requests-level speed
+- Full Chromium rendering power
 
-   pip install apify-client
+Handles dynamic JavaScript efficiently while remaining lighter than Selenium.
 
-3. Obtain your Apify API Token:
+### ✅ WAF & Fingerprint Resistance
+- Avoids `webdriver: true` flags
+- Less detectable by WAF systems (e.g., Akamai)
+- Reduces “Access Denied” blocks
 
-   Log into Apify and navigate to Settings > Integrations.  
-   Copy your Personal API token.
+### ✅ Manual Override & Recovery Logic
+Includes:
+- Hard Refresh Rescue mechanism
+- Automatic Session Reset
+- Cookie clearing on CAPTCHA detection
+- Browser restart with fresh identity
 
-## Configuration
+---
 
-Before running the script, update the authentication and targeting variables at the top of the scraper.py file:
+## 🛡 Anti-Block Strategy (Ironclad Method)
 
-• APIFY_API_TOKEN: Insert your personal token here.  
-• ACTOR_ID: The unique identifier of the SHEIN scraper on the Apify store.  
-• categoryId: Set to "12472" to specifically target the Women's Dresses category.
+### 🔁 Intelligent Session Reset
+- Browser session reset every 15 products
+- Clears cookies & tracking data
+- Prevents behavioral profiling
 
-## Usage
+### 🔗 Direct URL Pagination
+- Injects page parameters directly
+- Bypasses tracked “Next Page” buttons
 
-Once your environment variables are configured, execute the script via the command line:
+### ⚡ Bandwidth Optimization
+- Blocks image loading (`co.no_imgs(True)`)
+- Reduces proxy bandwidth usage
+- Improves page load speed significantly
 
-python scraper.py
+---
 
-## Modifying the Scrape Parameters
+## 🚀 Installation & Setup
 
-You can adjust the run_input dictionary within the script to customize the extraction:
+### 📌 Prerequisites
+- Python 3.8+
+- Chromium-based browser (Chrome or Edge)
 
-• "page": The starting pagination number (default: 1).  
-• "perPage": Items extracted per page (maximum: 100).  
-• "countryCode": Regional marketplace targeting (e.g., "US", "GB").
+### 📦 Install Dependencies
+```bash
+pip install DrissionPage
+```
 
-## Output Structure
+### 🌐 Proxy Configuration
+Update the `MY_PROXY` variable inside both scripts with:
 
-The script outputs a highly structured JSON file (e.g., shein_apify_category_12472.json) to your local directory. Each product entry contains deep data points, including:
+```
+IP:PORT
+```
 
-• goods_id / goods_name: Unique identifiers and full product titles.  
-• retailPrice & discountPrice: Current and historical pricing metrics.  
-• stock & realStock: Frontend display stock vs. actual warehouse inventory.  
-• main_image & detail_image: Direct URLs to all product media.  
-• productUrl: Direct storefront link.
+(Recommended: Rotating residential proxies for large-scale scraping)
+
+---
+
+## ▶ Usage
+
+### 1️⃣ Run Category Harvester
+```bash
+python script1_harvester.py
+```
+Output:
+```
+shein_flawless.json
+```
+
+---
+
+### 2️⃣ Run Deep Detail Scraper
+```bash
+python script2_deep_details.py
+```
+Output:
+```
+shein_deep_progress.json
+```
+
+---
+
+## 📊 Final Output Structure (JSON)
+
+Each product contains:
+
+```json
+{
+  "product_name": "",
+  "product_url": "",
+  "price": "",
+  "currency": "",
+  "description": "",
+  "materials": "",
+  "intro_text": "",
+  "image_urls": []
+}
+```
+
+### Data Includes:
+- ✅ Cleaned Product Titles  
+- ✅ Real-Time Price & Currency Detection  
+- ✅ Full Descriptions & Material Info  
+- ✅ High-Resolution Image URLs  
+
+---
+
+## ⚠ Disclaimer
+
+This project is intended strictly for:
+- Educational purposes  
+- Research  
+- Data engineering practice  
+
+Ensure compliance with SHEIN’s Terms of Service and applicable laws before deploying at scale.
+
+---
+
+## 📌 Key Highlights
+
+✔ Two-Stage Scalable Architecture  
+✔ CAPTCHA Recovery Logic  
+✔ Smart Session Rotation  
+✔ Optimized Proxy Usage  
+✔ Clean Analytical JSON Output  
+
+---
+
+**Built for performance. Engineered for resilience.**
