@@ -1,0 +1,13 @@
+2026/02/25-00:52:46.867 63c4 Reusing MANIFEST C:\Users\Akash sharma\Desktop\shein scraper\bot_profile\Default\IndexedDB\https_us.shein.com_0.indexeddb.leveldb/MANIFEST-000001
+2026/02/25-00:52:46.868 63c4 Recovering log #79
+2026/02/25-00:52:46.871 63c4 Reusing old log C:\Users\Akash sharma\Desktop\shein scraper\bot_profile\Default\IndexedDB\https_us.shein.com_0.indexeddb.leveldb/000079.log 
+2026/02/25-00:52:48.398 4dcc Level-0 table #84: started
+2026/02/25-00:52:48.402 4dcc Level-0 table #84: 33521 bytes OK
+2026/02/25-00:52:48.404 4dcc Delete type=0 #79
+2026/02/25-00:52:48.406 474 Manual compaction at level-0 from '\x00\x1b\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x1c\x00\x00\x00' @ 0 : 0; will stop at (end)
+2026/02/25-00:52:48.484 63c4 Compacting 1@1 + 1@2 files
+2026/02/25-00:52:48.489 63c4 Generated table #85@1: 192 keys, 17794 bytes
+2026/02/25-00:52:48.489 63c4 Compacted 1@1 + 1@2 files => 17794 bytes
+2026/02/25-00:52:48.490 63c4 compacted to: files[ 0 0 1 0 0 0 0 ]
+2026/02/25-00:52:48.490 63c4 Delete type=2 #81
+2026/02/25-00:52:48.490 63c4 Delete type=2 #84
