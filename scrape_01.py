@@ -81,7 +81,7 @@ def get_flawless_product_details():
         while True:
             # --- STRATEGY 1: PROACTIVE SESSION RESET ---
             if current_page_num > 1 and (current_page_num - 1) % PAGES_BEFORE_RESTART == 0:
-                print(f"🛠  Safety Reset: Reaching Page {current_page_num}. Refreshing identity...")
+                print(f"  Safety Reset: Reaching Page {current_page_num}. Refreshing identity...")
                 page.quit()
                 time.sleep(random.uniform(7, 12)) 
                 page = create_fresh_browser()
@@ -96,7 +96,7 @@ def get_flawless_product_details():
             # Human-like loading wait
             time.sleep(random.uniform(5.0, 8.0))
 
-            print("⏬ Scrolling to trigger lazy-loading...")
+            print(" Scrolling to trigger lazy-loading...")
             for _ in range(5): 
                 page.scroll.down(1000)
                 time.sleep(random.uniform(2.0, 3.5))
@@ -105,14 +105,14 @@ def get_flawless_product_details():
             
             # --- STRATEGY 3: REACTIVE CAPTCHA RESCUE ---
             if len(links) == 0:
-                print("⚠️ WARNING: Found 0 products! Likely a CAPTCHA wall.")
-                print("📸 Saving error log screenshot...")
+                print(" WARNING: Found 0 products! Likely a CAPTCHA wall.")
+                print(" Saving error log screenshot...")
                 page.get_screenshot(path=f"captcha_at_page_{current_page_num}.jpg")
                 
                 print("Executing Emergency Reset Rescue...")
                 page.quit()
                 cool_down = random.randint(30, 60)
-                print(f"⏳ Cooling down for {cool_down} seconds before retrying...")
+                print(f" Cooling down for {cool_down} seconds before retrying...")
                 time.sleep(cool_down)
                 
                 page = create_fresh_browser()
@@ -165,7 +165,7 @@ def get_flawless_product_details():
         print("\n Saving all collected data to 'shein_flawless.json'...")
         with open("shein_flawless.json", "w", encoding="utf-8") as f:
             json.dump(all_extracted_products, f, indent=4)
-        print(f"🎉 Process Finished. Total items: {len(all_extracted_products)}")
+        print(f" Process Finished. Total items: {len(all_extracted_products)}")
         try:
             page.quit()
         except:

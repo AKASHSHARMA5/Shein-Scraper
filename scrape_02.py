@@ -4,15 +4,17 @@ import random
 import os
 import shutil
 from DrissionPage import ChromiumPage, ChromiumOptions
+from dotenv import load_dotenv
 
+load_dotenv()
 # ==========================================
-# 🛑 CONFIGURATION 🛑
+# CONFIGURATION 
 # ==========================================
-# Broken down proxy credentials for the extension generator
-PROXY_HOST = "p.webshare.io"
-PROXY_PORT = 80
-PROXY_USER = "jocvykbwresidential-8"
-PROXY_PASS = "c2m6ic09of3q"
+# We split the proxy into parts so the extension can read it
+PROXY_HOST = os.getenv("PROXY_HOST")
+PROXY_PORT = int(os.getenv("PROXY_PORT", 80)) # Added fallback to prevent crashes
+PROXY_USER = os.getenv("PROXY_USER")
+PROXY_PASS = os.getenv("PROXY_PASS")
 
 RESET_EVERY_X_ITEMS = 15   # Wipe session every 15 products to stay under the radar
 SAVE_PROGRESS_EVERY = 50   # Emergency save every 50 items
@@ -52,7 +54,7 @@ def create_fresh_browser():
     print("\n♻️  Resetting session and clearing cookies...")
     co = ChromiumOptions()
     
-    # 🚨 Inject the background proxy extension
+    #  Inject the background proxy extension
     proxy_folder = build_proxy_extension()
     co.add_extension(proxy_folder)
     
@@ -69,11 +71,11 @@ def scrape_deep_details():
         with open('shein_flawless.json', 'r', encoding='utf-8') as f:
             products = json.load(f)
     except FileNotFoundError:
-        print("❌ Error: 'shein_flawless.json' not found. Run script 1 first!")
+        print(" Error: 'shein_flawless.json' not found. Run script 1 first!")
         return
 
     total_count = len(products)
-    print(f"📦 Loaded {total_count} products. Starting deep scrape...")
+    print(f" Loaded {total_count} products. Starting deep scrape...")
     
     page = create_fresh_browser()
     
@@ -87,7 +89,7 @@ def scrape_deep_details():
             
             # --- STRATEGY: PROACTIVE SESSION RESET ---
             if index > 0 and index % RESET_EVERY_X_ITEMS == 0 and index != last_reset_index:
-                print(f"🛠  Reached {index} items. Rebooting browser to lower Bot Score...")
+                print(f" Reached {index} items. Rebooting browser to lower Bot Score...")
                 page.quit()
                 time.sleep(random.uniform(5, 10))
                 page = create_fresh_browser()
@@ -99,9 +101,9 @@ def scrape_deep_details():
                 page.get(product['url'])
                 time.sleep(random.uniform(4.0, 7.0))
                 
-                # 🚨 NEW: THE RISK DETECTOR 🚨
+                #  NEW: THE RISK DETECTOR 🚨
                 if "risk/action/limit" in page.url or "403" in page.html:
-                    print("🛑 HIT THE RISK WALL! Rotating IP...")
+                    print(" HIT THE RISK WALL! Rotating IP...")
                     page.quit()
                     time.sleep(random.randint(15, 25))
                     page = create_fresh_browser()
@@ -111,7 +113,7 @@ def scrape_deep_details():
                 details_div = page.ele('xpath://div[contains(@class, "product-intro")]', timeout=3)
                 
                 if not details_div:
-                    print("⚠️  Empty page or Captcha! Attempting Hard Refresh...")
+                    print("  Empty page or Captcha! Attempting Hard Refresh...")
                     page.refresh()
                     time.sleep(8)
                     details_div = page.ele('xpath://div[contains(@class, "product-intro")]')
@@ -120,13 +122,13 @@ def scrape_deep_details():
                     raw_text = details_div.text
                     clean_text = "\n".join([line for line in raw_text.split('\n') if line.strip()])
                     product['deep_details'] = clean_text
-                    print("   ✅ Details saved.")
+                    print("    Details saved.")
                 else:
                     product['deep_details'] = "Blocked or Not Found"
-                    print("   ❌ Failed to load details.")
+                    print("    Failed to load details.")
 
             except Exception as e:
-                print(f"   ❌ Error: {e}")
+                print(f"    Error: {e}")
                 product['deep_details'] = "Error during scrape"
 
             # Move to the next product only if we didn't hit a `continue` (risk wall)
@@ -136,13 +138,13 @@ def scrape_deep_details():
             if index % SAVE_PROGRESS_EVERY == 0:
                 with open("shein_deep_progress.json", "w", encoding="utf-8") as f:
                     json.dump(products[:index], f, indent=4)
-                print(f"💾 Progress checkpoint: {index} items saved.")
+                print(f" Progress checkpoint: {index} items saved.")
 
     finally:
-        print("\n💾 Saving final data...")
+        print("\n Saving final data...")
         with open("shein_final_enriched.json", "w", encoding="utf-8") as f:
             json.dump(products, f, indent=4)
-        print(f"🎉 MISSION COMPLETE! Check 'shein_final_enriched.json'.")
+        print(f" MISSION COMPLETE! Check 'shein_final_enriched.json'.")
         try:
             page.quit()
         except:
