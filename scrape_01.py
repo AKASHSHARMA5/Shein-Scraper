@@ -6,15 +6,17 @@ import os
 import shutil
 from urllib.parse import urlparse
 from DrissionPage import ChromiumPage, ChromiumOptions
+from dotenv import load_dotenv
 
+load_dotenv()
 # ==========================================
-# 🛑 CONFIGURATION 🛑
+#  CONFIGURATION 
 # ==========================================
 # We split the proxy into parts so the extension can read it
-PROXY_HOST = "p.webshare.io"
-PROXY_PORT = 80
-PROXY_USER = "jocvykbwresidential-8"
-PROXY_PASS = "c2m6ic09of3q"
+PROXY_HOST = os.getenv("PROXY_HOST")
+PROXY_PORT = int(os.getenv("PROXY_PORT", 80)) # Added fallback to prevent crashes
+PROXY_USER = os.getenv("PROXY_USER")
+PROXY_PASS = os.getenv("PROXY_PASS")
 
 BASE_URL = "https://us.shein.com/category-c-2030.html"
 PAGES_BEFORE_RESTART = 4 
@@ -55,7 +57,7 @@ def create_fresh_browser():
     print("\n♻️  Creating a fresh browser session to clear trackers...")
     co = ChromiumOptions()
     
-    # 🚨 Inject the background proxy extension instead of using set_proxy()
+    # Inject the background proxy extension instead of using set_proxy()
     proxy_folder = build_proxy_extension()
     co.add_extension(proxy_folder)
     
@@ -74,7 +76,7 @@ def get_flawless_product_details():
     page = create_fresh_browser()
 
     try:
-        print("🚀 Launching Ironclad Scraper with Auto-Reset...")
+        print("Launching Ironclad Scraper with Auto-Reset...")
         
         while True:
             # --- STRATEGY 1: PROACTIVE SESSION RESET ---
@@ -107,7 +109,7 @@ def get_flawless_product_details():
                 print("📸 Saving error log screenshot...")
                 page.get_screenshot(path=f"captcha_at_page_{current_page_num}.jpg")
                 
-                print("🔄 Executing Emergency Reset Rescue...")
+                print("Executing Emergency Reset Rescue...")
                 page.quit()
                 cool_down = random.randint(30, 60)
                 print(f"⏳ Cooling down for {cool_down} seconds before retrying...")
@@ -152,15 +154,15 @@ def get_flawless_product_details():
                     all_extracted_products.append(data)
                     page_valid_count += 1
             
-            print(f"✅ Successfully grabbed {page_valid_count} products.")
+            print(f" Successfully grabbed {page_valid_count} products.")
             
             current_page_num += 1
             time.sleep(random.uniform(4, 7))
 
     except Exception as e:
-        print(f"❌ Critical Error: {e}")
+        print(f"Critical Error: {e}")
     finally:
-        print("\n💾 Saving all collected data to 'shein_flawless.json'...")
+        print("\n Saving all collected data to 'shein_flawless.json'...")
         with open("shein_flawless.json", "w", encoding="utf-8") as f:
             json.dump(all_extracted_products, f, indent=4)
         print(f"🎉 Process Finished. Total items: {len(all_extracted_products)}")
