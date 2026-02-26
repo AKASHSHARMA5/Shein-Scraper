@@ -6,20 +6,19 @@ import os
 import shutil
 from urllib.parse import urlparse
 from DrissionPage import ChromiumPage, ChromiumOptions
-from dotenv import load_dotenv
 
-load_dotenv()
 # ==========================================
 #  CONFIGURATION 
 # ==========================================
 # We split the proxy into parts so the extension can read it
-PROXY_HOST = os.getenv("PROXY_HOST")
-PROXY_PORT = int(os.getenv("PROXY_PORT", 80)) # Added fallback to prevent crashes
-PROXY_USER = os.getenv("PROXY_USER")
-PROXY_PASS = os.getenv("PROXY_PASS")
+PROXY_HOST = "p.webshare.io"
+PROXY_PORT = "80"
+PROXY_USER = "jocvykbwresidential-123"
+PROXY_PASS = "c2m6ic09of3q"
 
-BASE_URL = "https://us.shein.com/category-c-2030.html"
-PAGES_BEFORE_RESTART = 4 
+BASE_URL = "https://us.shein.com/Men-Denim-c-1973.html"
+# https://us.shein.com/category-c-2223.html or https://us.shein.com/category-c-2030.html or https://us.shein.com/category-c-1740.html (women jeans) https://us.shein.com/category-c-1738.html (top) https://us.shein.com/category-c-12475.html https://us.shein.com/recommend/NEW-IN-sc-10050029500.html "https://us.shein.com/hotsale/Beachwear-sc-003147526.html" https://us.shein.com/Men-Apparel-c-2026.html  https://us.shein.com/category-c-1888.html https://us.shein.com/Underwear-Sleepwear-c-2038.html  https://us.shein.com/Men-Apparel-c-2026.html https://us.shein.com/Underwear-Sleepwear-c-2038.html "https://us.shein.com/recommend/Women-Denim-sc-10050026155.html"
+PAGES_BEFORE_RESTART = 100  # for optimal balance between speed and stealth 
 
 def build_proxy_extension():
     """Builds a temporary Chrome Extension to silently inject the proxy password."""
@@ -56,18 +55,22 @@ def create_fresh_browser():
     """Launch a brand new browser instance to reset Bot Score."""
     print("\n♻️  Creating a fresh browser session to clear trackers...")
     co = ChromiumOptions()
+
+    # 🚨 ADD THIS: Force Incognito mode to prevent poisoned cookies
+    co.incognito(True)
     
+    #co.no_imgs(True) Disable images for faster loading and less bandwidth
     # Inject the background proxy extension instead of using set_proxy()
     proxy_folder = build_proxy_extension()
     co.add_extension(proxy_folder)
     
     # Randomize User-Agent to look like a different person each time
-    ua_list = [
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Edge/122.0.0.0 Safari/537.36"
-    ]
-    co.set_user_agent(random.choice(ua_list))
+    #ua_list = [
+    #    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+    #    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+    #    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Edge/122.0.0.0 Safari/537.36"
+    #]
+    #co.set_user_agent(random.choice(ua_list))
     return ChromiumPage(co)
 
 def get_flawless_product_details():
