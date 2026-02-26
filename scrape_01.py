@@ -6,15 +6,17 @@ import os
 import shutil
 from urllib.parse import urlparse
 from DrissionPage import ChromiumPage, ChromiumOptions
+from dotenv import load_dotenv
 
+load_dotenv()
 # ==========================================
 #  CONFIGURATION 
 # ==========================================
 # We split the proxy into parts so the extension can read it
-PROXY_HOST = "p.webshare.io"
-PROXY_PORT = "80"
-PROXY_USER = "jocvykbwresidential-123"
-PROXY_PASS = "c2m6ic09of3q"
+PROXY_HOST = os.getenv("PROXY_HOST")
+PROXY_PORT = int(os.getenv("PROXY_PORT", 80)) # Added fallback to prevent crashes
+PROXY_USER = os.getenv("PROXY_USER")
+PROXY_PASS = os.getenv("PROXY_PASS")
 
 BASE_URL = "https://us.shein.com/Men-Denim-c-1973.html"
 # https://us.shein.com/category-c-2223.html or https://us.shein.com/category-c-2030.html or https://us.shein.com/category-c-1740.html (women jeans) https://us.shein.com/category-c-1738.html (top) https://us.shein.com/category-c-12475.html https://us.shein.com/recommend/NEW-IN-sc-10050029500.html "https://us.shein.com/hotsale/Beachwear-sc-003147526.html" https://us.shein.com/Men-Apparel-c-2026.html  https://us.shein.com/category-c-1888.html https://us.shein.com/Underwear-Sleepwear-c-2038.html  https://us.shein.com/Men-Apparel-c-2026.html https://us.shein.com/Underwear-Sleepwear-c-2038.html "https://us.shein.com/recommend/Women-Denim-sc-10050026155.html"
